@@ -1,5 +1,5 @@
 /* Improved Shopping List Card */
-const version = "2.3.0-BETA-1";
+const version = "2.3.0-BETA-2";
 /*
  * @description Improved Shopping List Card for Home Assistant.
  * @author Nisbo
@@ -211,6 +211,7 @@ const TRANSLATIONS = {
         "editor.helpers.mode"                           : "Legt fest, wie die Liste verwendet wird. Im Modus „Einkaufsliste“ stehen erweiterte Funktionen zur originalen Einkaufsliste zur Verfügung, jedoch ohne Fälligkeiten. Im Modus „To-Do-Liste“ können zusätzlich Fälligkeitsdaten gesetzt und verwaltet werden, die Bedienung unterscheidet sich dabei leicht. Hinweis: Die originale Home Assistant Einkaufsliste mit der Entität 'Einkaufsliste' unterstützt keine Fälligkeiten. Zusätzlich gibt es im To-Do-Modus keine Anzahleingabe, keine Plus- und Minus-Buttons, keine Export-Buttons sowie keinen Button, um erledigte Einträge zu löschen.",
         "editor.labels.highlight_words"                 : "Hervorgehobene Wörter",
         "editor.labels.chips_with_cat_color"            : "Farbe der Kategorien nutzen",
+        "editor.labels.allow_filter_chips"              : "Filterung der Chips erlauben",
         "editor.labels.highlight_color"                 : "Farbe für Hervorhebung",
         "editor.labels.chip_merge"                      : "Chips kombinieren",
         "editor.labels.local_chips"                     : "Lokale Chips erlauben?",
@@ -291,6 +292,7 @@ const TRANSLATIONS = {
         "editor.helpers.entity"                         : "Wenn keine Entität ausgewählt wurde, wird automatisch die Standard-Einkaufsliste von Home Assistant verwendet. Diese hat allerdings keine Fälligkeits-Funktion und sollte somit nur im Modus 'Einkaufsliste' und nicht im Modus 'To-Do-Liste' verwendet werden.",
 		"editor.helpers.highlight_words"                : "Liste von Wörtern, die in Chips farblich (Hintergrund) hervorgehoben werden sollen. Kann als Komma oder Semikolon-Liste eingegeben werden, z.B. 'Butter,Bananen,Mehl'.",
         "editor.helpers.chips_with_cat_color"           : "Sofern ein Chip einer Kategorie als 'item' zugewiesen wurde und für die Kategorie eine Farbe angegeben wurde, wird der Chip in der Farbe der Kategorie angezeigt. Die Reihenfolge, wie die Farben vergeben werden: Highlight > Kategorie > Global > Standard > Browser.",
+        "editor.helpers.allow_filter_chips"             : "Ermöglicht die Filterung der Chips über das Eingabefeld.",
         "editor.helpers.highlight_color"                : "Hex- oder rgba-Farbcode für die hervorgehobenen Wörter. Beispiel: '#D9534F', 'rgba(255,0,0,0.5)', 'red'.",
         "editor.helpers.chip_merge"                     : "Legt fest, wie Globale-, Standard- und Browser-Chips zusammen angezeigt werden.",
         "editor.helpers.list_font_size"                 : "Legt die Schriftgröße für die Artikel in der Liste fest. Standard: 14px.",
@@ -537,6 +539,7 @@ const TRANSLATIONS = {
         "editor.labels.entity"                          : "To-Do-List (Entity)",
         "editor.labels.highlight_words"                 : "Highlight words",
         "editor.labels.chips_with_cat_color"            : "Use category colors",
+        "editor.labels.allow_filter_chips"              : "Allow filtering chips",
         "editor.labels.highlight_color"                 : "Highlight color",
         "editor.labels.chip_merge"                      : "Combine chips",
         "editor.labels.local_chips"                     : "Allow local chips?",
@@ -618,6 +621,7 @@ const TRANSLATIONS = {
         "editor.helpers.mode"                           : "Defines how the list is used. In 'Shopping List' mode, extended functions for the original shopping list are available, but without due dates. In 'To-Do List' mode, due dates can additionally be set and managed, with slightly different handling. Note: The original Home Assistant shopping list entity 'Shopping List' does not support due dates. In To-Do mode, there is also no quantity input, no plus or minus buttons, no export buttons, and no button to delete completed entries.",
         "editor.helpers.highlight_words"                : "List of words that should be highlighted in chips (by background). Enter as comma- or semicolon-separated list, e.g. 'Butter,Bananas,Flour'.",
 		"editor.helpers.chips_with_cat_color"           : "If a chip is assigned as an 'item' to a category and that category has a color defined, the chip will be displayed in the category's color. The order of color priority is: Highlight > Category > Global > Standard > Browser.",
+        "editor.helpers.allow_filter_chips"             : "Allows filtering of chips via the input field.",
         "editor.helpers.highlight_color"                : "Hex or rgba color code for highlighted words. Examples: '#D9534F', 'rgba(255,0,0,0.5)', 'red'.",
 		"editor.helpers.chip_merge"                     : "Determines how global, standard and browser chips are combined and displayed.",
 		"editor.helpers.list_font_size"                 : "Sets the font size for items in the list. Default: 14px.",
@@ -804,6 +808,7 @@ class HaShoppingListImproved extends HTMLElement {
         this._notifyEntitySMTP      = config.notify_entity_smtp || "";
         this._showCategoryChips     = (config.show_category_chips === true) ? true : false;
         this._allowFilter           = (config.allow_filter === true) ? true : false;
+        this._allowFilterChips      = (config.allow_filter_chips === true) ? true : false;
         this._capitalizeFirst       = (config.capitalize_first_letter === true) ? true : false;
         this._sortItems             = (config.sort_items === false) ? false : true;
         this._hideCatCountAllDone   = (config.hide_cat_count_all_done === true) ? true : false;
@@ -1264,6 +1269,7 @@ class HaShoppingListImproved extends HTMLElement {
                     { name: "chips",           selector: { text: {} }, default: "" },
                     { name: "highlight_words", selector: { text: {} }, default: "" },
                     { name: "chips_with_cat_color", selector: { boolean: {} }, default: true },
+                    { name: "allow_filter_chips", selector: { boolean: {} }, default: false },
                     { name: "chip_file",       selector: { text: {} }, default: "" }
                 ]
             },
@@ -1987,7 +1993,12 @@ class HaShoppingListImproved extends HTMLElement {
         this._shadow.getElementById('addBtn').addEventListener('click', this._onAdd);
         this._shadow.getElementById('itemInput').addEventListener('keydown', (e)=>{ if (e.key === 'Enter') this._onAdd(); });
         this._shadow.getElementById('itemInput').addEventListener('input', (e) => { 
-            if (this._allowFilter) this._renderList(); // to apply the filter while typing
+            if (this._allowFilter) {
+                this._renderList(); // to apply the filter while typing
+            }
+            if (this._allowFilterChips) {
+                this._renderHistory(); // to search in chips as well
+            }
             if (this._capitalizeFirst && e.target.value.length > 0) {
                 e.target.value = e.target.value[0].toUpperCase() + e.target.value.slice(1);
             }
@@ -5427,6 +5438,12 @@ async _adminOptions() {
             chip.className = 'chip';
             chip.textContent = chipText;
 
+            // Filter Chips
+            if(this._allowFilterChips && this._inputEl && this._inputEl.value && this._inputEl.value.trim().length > 0) {
+                if(!chipText.toLowerCase().includes(this._inputEl.value.trim().toLowerCase())) return;
+                //console.info("[ha-shopping-list-improved] chipText:", chipText);
+            }
+
             // check if chip is assigned to a category
             const catWithBg = this._categories?.find(
                 c => c.bgcolor && c.items?.some(item => item.toLowerCase() === chipText.toLowerCase())
@@ -5542,6 +5559,21 @@ async _adminOptions() {
                 if(category.isDynamic) return; // skip dynamic categories
                 if (category.items.length === 0) return;
 
+                // Filter Chips --> check if any item in category matches filter
+                let openCatIfClosed = false;
+                if(this._allowFilterChips && this._inputEl && this._inputEl.value && this._inputEl.value.trim().length > 0) {
+                    const filter = this._inputEl.value.trim().toLowerCase();
+
+                    const hasMatch = category.items.some(item =>
+                        typeof item === "string" &&
+                        item.toLowerCase().includes(filter)
+                    );
+
+                    if (!hasMatch) return;
+
+                    openCatIfClosed = true;
+                }
+
                 const categoryChip = document.createElement('div');
                 categoryChip.className = 'category-chip';
                 categoryChip.textContent = category.name || "(no category)";
@@ -5555,6 +5587,9 @@ async _adminOptions() {
                 const content = document.createElement('div');
                 content.className = 'category-items';
                 content.style.display = isCollapsed ? 'none' : 'flex';
+
+                // Open Category if filter matches
+                if (openCatIfClosed) content.style.display = 'flex';
 
                 // Click on Category-Chip to toggle
                 categoryChip.addEventListener('click', () => {
@@ -5592,6 +5627,12 @@ async _adminOptions() {
                     const chip = document.createElement('span');
                     chip.className = 'chip';
                     chip.textContent = itemText;
+
+                    // Filter Chips
+                    if(this._allowFilterChips && this._inputEl && this._inputEl.value && this._inputEl.value.trim().length > 0) {
+                        if(!itemText.toLowerCase().includes(this._inputEl.value.trim().toLowerCase())) return;
+                        //console.info("[ha-shopping-list-improved] chipText:", itemText);
+                    }
 
                     if (category.bgcolor && this._chipsWithCatColor) {
                         chip.style.background = category.bgcolor;
