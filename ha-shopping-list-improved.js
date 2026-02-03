@@ -1,5 +1,5 @@
 /* Improved Shopping List Card */
-const version = "2.2.0";
+const version = "2.3.0-BETA-1";
 /*
  * @description Improved Shopping List Card for Home Assistant.
  * @author Nisbo
@@ -82,6 +82,7 @@ const TRANSLATIONS = {
         "editor.placeholders.quantity"                  : "Anzahl",
         "editor.placeholders.item"                      : "Artikel...",
         "editor.labels.show_message_button"             : "Nachrichten-Button anzeigen",
+        "editor.labels.show_clear_button"               : "'Erledigte löschen' Button anzeigen",
         "editor.labels.notify_entity"                   : "Notify-Entität",
         "editor.labels.add_button"                      : "Hinzufügen",
         "editor.labels.clear_button"                    : "Erledigte löschen",
@@ -100,6 +101,7 @@ const TRANSLATIONS = {
 		"editor.labels.alert_no_valid_ean"    			: "Keine gültige EAN oder Produkt gefunden!",
 		"editor.labels.categories"                   	: "Kategorien",
         "editor.labels.show_cat_count"                  : "Artikelanzahl in Kategorien anzeigen ?",
+        "editor.labels.hide_cat_count_all_done"         : "Artikelanzahl ausblenden, wenn alle erledigt ?",
         "editor.labels.show_cat_next_due"               : "Nächste Fälligkeit in Kategorie anzeigen ?",
         "editor.labels.cat_double_sized_icon"           : "Größeres Icon anzeigen ?",
         "editor.labels.show_cat_exclamation_mark"       : "Ausrufezeichen für fällige Einträge",
@@ -127,6 +129,7 @@ const TRANSLATIONS = {
         "editor.labels.notify_on_done"                  : "Benachrichtigung auch beim 'als erledigt' markieren",
         "editor.labels.show_category_chips"             : "Chips aus Kategorie-Items generieren",
         "editor.labels.allow_filter"                    : "Filterung der Artikel erlauben",
+        "editor.labels.show_done_hidden_items_in_search": "Erledigte (verborgene) Artikel anzeigen",
         "editor.labels.capitalize_first_letter"         : "Ersten Buchstaben automatisch groß schreiben",
         
 		"editor.options.chips_position.auto"            : "Automatisch Rechts / Unten (abhängig von Bildschirmgröße)",
@@ -249,9 +252,11 @@ const TRANSLATIONS = {
         "editor.labels.todo_warning_thresholds"         : "Warnschwellen für ToDo-Modus",
         "editor.labels.show_title_info"                 : "Nächste Fälligkeit im ToDo-Modus anzeigen",
         "editor.labels.show_title_info_icon"            : "Icon für nächste Fälligkeit anzeigen",
+        "editor.labels.sort_items"                      : "Artikel alphabetisch sortieren",
 
         "editor.helpers.show_title_info"                : "Zeigt im ToDo-Modus, sofern ein Titel angegeben wurde, die nächste Fälligkeit aller Einträge aller Kategorien unter dem Titel an. Abgelaufene Einträge werden hier nicht angezeigt, diese werden durch ein Ausrufezeichen rechts vom Namen angezeigt.",
         "editor.helpers.show_title_info_icon"           : "Zeigt vor dem Fälligkeitsdatum als optische Hervorhebung ein Kalender-Icon an.",
+        "editor.helpers.sort_items"                     : "Sortiert die Artikel in der Liste alphabetisch (A → Z).",
         "editor.helpers.todo_warning_thresholds"        : "Konfiguration der Warnschwellen im ToDo-Modus. Die Werte sind in Minuten anzugeben und bestimmen, wann Aufgaben als „bald fällig“ markiert werden.",
         "editor.helpers.todo_yellow_m"                  : "Warnschwelle für Intervalle in Monaten, definiert in Minuten (Standard: 1440 = 24 Stunden)",
         "editor.helpers.todo_yellow_d"                  : "Warnschwelle für Intervalle in Tagen, definiert in Minuten (Standard: 120 = 2 Stunden)",
@@ -261,6 +266,7 @@ const TRANSLATIONS = {
         "editor.helpers.input_row_position"             : "Legt fest, ob die Eingabemaske (Anzahl, Artikel, Button) oberhalb oder unterhalb der Einträge angezeigt wird.",
         "editor.helpers.allow_dynamic_categories"       : "Dynamische Kategorien ermöglichen es, von außerhalb der Karte (z. B. über Automationen im Format: ‘@Kategorie@ Artikel’) Artikel Kategorien zuzuordnen, die nicht definiert sind. Außerdem können beim Hinzufügen über die Karte neue Kategorien erstellt werden. Diese Kategorien bleiben bestehen, bis der letzte Artikel in der Kategorie entfernt wurde.",
         "editor.helpers.show_message_button"            : "Zeigt im Modus 'Einkaufsliste' einen Nachrichten-Button an, über den die Liste z.B. per Email oder Telegram (über 'notify') gesendet werden kann. Dazu muss die Notify-Entität unter dem Punkt Benachrichtigungen konfiguriert werden.",
+        "editor.helpers.show_clear_button"              : "Zeigt einen Button an, um alle als erledigt markierten Artikel aus der Liste zu entfernen.",
         "editor.helpers.notify_entity"                  : "Die Notify-Entität, die verwendet wird, um die Liste zu senden, wenn z.B. der Nachrichten-Button gedrückt wird. Beispiel: 'notify.mobile_app_mein_telefon' oder 'notify.telegram'. Die Benachrichtigungen enthalten HTML Formattierungen, um die Lesbarkeit zu verbessern. Stelle sicher, dass die verwendete Notify-Entität HTML-Formattierungen unterstützt. Benachrichtigungen über die SMTP Platform, sind in der Auswahl nicht vorhanden und müssen separat konfiguriert werden.",
         "editor.helpers.show_admin_button"              : "Zeigt einen Admin-Button an, wodurch die Optionen zum Kopieren von Browser Chips / Artikeln / Kategorien genutzt werden können.",
         "editor.helpers.notify_on_change"               : "Sendet eine Benachrichtigung über die konfigurierte Notify-Entität, sobald ein Artikel hinzugefügt, bearbeitet oder entfernt wurde.",
@@ -270,6 +276,7 @@ const TRANSLATIONS = {
         "editor.helpers.notify_on_done"                 : "Sendet auch eine Benachrichtigung, wenn ein Artikel als erledigt markiert wurde. Achtung, dies kann zu vielen Benachrichtigungen führen, wenn viele Artikel während des Einkaufs als erledigt markiert werden.",
         "editor.helpers.show_category_chips"            : "Erzeugt automatisch Chips an Hand der zugewiesenen Artikel, die einer Kategorie zugewiesen wurden. Angezeigt werden diese als ein aus-/einklappbarer Chip, sofern die Kategorie mindestens einen Artikel enthält.",
         "editor.helpers.allow_filter"                   : "Ermöglicht die Filterung der Artikel in der Liste über das Eingabefeld.",
+        "editor.helpers.show_done_hidden_items_in_search": "Wenn die Filterfunktion aktiviert ist, werden auch erledigte (verborgene) Artikel in den Suchergebnissen angezeigt.",
         "editor.helpers.capitalize_first_letter"        : "Wenn aktiviert, wird der erste Buchstabe im Eingabefeld automatisch groß schreiben",
         "editor.helpers.title_icon"                     : "Zeigt vor dem Titel das ausgewählte Icon an.",
         "editor.helpers.font.sizes"                     : "Legt die Schriftgrößen für die Liste, Kategorien und Chips fest.",
@@ -318,6 +325,7 @@ const TRANSLATIONS = {
         "editor.helpers.show_cat_exclamation_mark"      : "Zeigt im To-Do Mode im Titel und in der Kategorie ein Ausrufezeichen an, sofern es in der Kategorie fällige Einträge gibt.",
         "editor.helpers.show_title_exclamation_mark"    : "Zeigt im To-Do Mode im Titel ein Ausrufezeichen an, sofern es in einer Kategorie fällige Einträge gibt.",
         "editor.helpers.show_cat_count"                 : "Wenn diese Option aktiviert ist, wird die Anzahl der Artikel in jeder Kategorie neben dem Kategorienamen angezeigt. Im ToDo Modus wird die Anzahl ivertiert angezeigt. Die Anzahl vor dem '/' umfasst somit nur die noch nicht fälligen Einträge. (Beispiel: 3/5 bedeutet, dass von 5 Einträgen 3 noch nicht fällig sind.) So kann man z.B. bei (5/5) einfach sehen, dass aktuell keine Einträge zu erledigen sind.",
+        "editor.helpers.hide_cat_count_all_done"        : "Wenn diese Option aktiviert ist, wird die Artikelanzahl in der Kategorie ausgeblendet, sobald alle Einträge in der Kategorie als erledigt markiert wurden.",
         "editor.helpers.show_cat_next_due"              : "Wenn diese Option aktiviert ist, wird im To-Do Modus das nächste Fälligkeitsdatum unter dem Kategorienamen angezeigt. So kann man auf einen Blick sehen, wann der nächste Eintrag in dieser Kategorie fällig ist.",
         "editor.helpers.cat_double_sized_icon"          : "Wenn die nächste Fälligkeit angezeigt wird, kann mit dieser Option das Icon vergrößert werden, damit es optisch besser passt.",
         "editor.helpers.show_cat_popup"                 : "Wenn diese Option aktiviert ist, erscheint beim Hinzufügen eines neuen Artikels ein Pop-up, in dem man eine Kategorie auswählen kann.",
@@ -401,6 +409,7 @@ const TRANSLATIONS = {
         "editor.placeholders.quantity"                  : "Quantity",
         "editor.placeholders.item"                      : "Item...",
         "editor.labels.show_message_button"             : "Show message button",
+        "editor.labels.show_clear_button"               : "Show 'clear completed' button",
         "editor.labels.notify_entity"                   : "Notify-Entity",
         "editor.labels.add_button"                      : "Add",
         "editor.labels.clear_button"                    : "Clear completed",
@@ -419,6 +428,7 @@ const TRANSLATIONS = {
 		"editor.labels.alert_no_valid_ean"    			: "No valid EAN or Product found!",
 		"editor.labels.categories"                   	: "Categories",
         "editor.labels.show_cat_count"                  : "Show item count in categories ?",
+        "editor.labels.hide_cat_count_all_done"         : "Hide item count when all items are done ?",
         "editor.labels.show_cat_next_due"               : "Show next due in category ?",
         "editor.labels.cat_double_sized_icon"           : "Show bigger Icon ?",
         "editor.labels.show_cat_exclamation_mark"       : "Show an exclamation mark for due items",
@@ -446,6 +456,7 @@ const TRANSLATIONS = {
         "editor.labels.notify_on_done"                  : "Notify also when item is marked as done",
         "editor.labels.show_category_chips"             : "Generate chips from categorie items",
         "editor.labels.allow_filter"                    : "Allow filtering items",
+        "editor.labels.show_done_hidden_items_in_search": "Show done (hidden) items in search results",
         "editor.labels.capitalize_first_letter"         : "Capitalize first letter of items",
 
 		"editor.options.chips_position.auto"            : "Automatic Right / Bottom (depends on screen size)",
@@ -567,9 +578,11 @@ const TRANSLATIONS = {
         "editor.labels.todo_warning_thresholds"         : "Warning thresholds for ToDo mode",
         "editor.labels.show_title_info"                 : "Show next due date in ToDo mode",
         "editor.labels.show_title_info_icon"            : "Show icon for next due date",
+        "editor.labels.sort_items"                      : "Sort items alphabetically",
 
         "editor.helpers.show_title_info"                : "Displays the next due date of all items from all categories under the title when in ToDo mode, provided a title is set. Expired items are not shown here; they are indicated by an exclamation mark to the right of the name.",
         "editor.helpers.show_title_info_icon"           : "Displays a calendar icon before the due date as a visual highlight.",
+        "editor.helpers.sort_items"                     : "If enabled, items in the list will be sorted alphabetically.",
         "editor.helpers.todo_warning_thresholds"        : "Configuration of warning thresholds in ToDo mode. Values are specified in minutes and determine when tasks are marked as “due soon”.",
         "editor.helpers.todo_yellow_m"                  : "Warning threshold for intervals in months, defined in minutes (Default: 1440 = 24 hours)",
         "editor.helpers.todo_yellow_d"                  : "Warning threshold for intervals in days, defined in minutes (Default: 120 = 2 hours)",
@@ -579,6 +592,7 @@ const TRANSLATIONS = {
         "editor.helpers.input_row_position"             : "Determines whether the input mask (quantity, item, button) is displayed above or below the entries.",
         "editor.helpers.allow_dynamic_categories"       : "Dynamic categories make it possible to assign items to categories that are not predefined, even from outside the card (e.g. through automations in the format: ‘@Category@ Item’). Additionally, new categories can be created when adding items through the card. These categories remain available until the last item in the category has been removed.",
         "editor.helpers.show_message_button"            : "Displays (in Shopping List Mode) a message button that allows sending the list via email, Telegram (using 'notify'), or similar. The notify entity must be configured under the Notifications section.",
+        "editor.helpers.show_clear_button"              : "Displays a button to clear all completed items from the list.",
         "editor.helpers.notify_entity"                  : "The notify entity used e.g. to send the list when the message button is pressed. This entity must be configured in Home Assistant beforehand (e.g. 'notify.mobile_app_xyz' or 'notify.telegram'). Notifications include HTML formatting to improve readability. Make sure the configured notify entity supports HTML formatting. Notifications via SMTP platform are not included here; for SMTP, use the 'notify_entity_smtp' option.",
         "editor.helpers.show_admin_button"              : "Displays an admin options button, which opens a dialog to copy browser chips, dynamic categories, and manually assigned items.", 
         "editor.helpers.notify_on_change"               : "Sends a notification via the configured notify entity whenever an item is added, edited, or removed.",
@@ -588,6 +602,7 @@ const TRANSLATIONS = {
         "editor.helpers.notify_on_done"                 : "Also sends a notification when an item is marked as completed. Note: This may result in a large number of notifications if many items are marked as completed during shopping.",
         "editor.helpers.show_category_chips"            : "Automatically generates chips based on items assigned to a category. Each category is displayed as a collapsible chip, provided the category contains at least one item.",
         "editor.helpers.allow_filter"                   : "Allows filtering of the items in the list via the input field.",
+        "editor.helpers.show_done_hidden_items_in_search": "When filtering items in the list, this option ensures that completed (and hidden) items are also included in the search results.",
         "editor.helpers.capitalize_first_letter"        : "If enabled, the first letter in the input field will be automatically capitalized.",
         "editor.helpers.title_icon"                     : "Displays the selected icon before the title.",
         "editor.helpers.font.sizes"                     : "Defines the font sizes for the list, categories, and chips.",
@@ -639,6 +654,7 @@ const TRANSLATIONS = {
         "editor.helpers.show_cat_next_due"              : "If this option is enabled, the next due date will be displayed under the category name in To-Do mode. This way, you can see at a glance when the next item in this category is due.",
         "editor.helpers.cat_double_sized_icon"          : "If the next due date is displayed, this option allows enlarging the icon so that it fits better visually.",
         "editor.helpers.show_cat_count"                 : "If this option is enabled, the number of items in each category will be displayed next to the category name. In To-Do mode, the count is shown inverted. Thus, the number before the '/' only includes the entries that are not yet due. (Example: 3/5 means that out of 5 entries, 3 are not yet due.) This way, for example, at (5/5) you can easily see that there are currently no entries to be done.",
+        "editor.helpers.hide_cat_count_all_done"        : "If this option is enabled, the item count will be hidden for categories where all items are marked as completed.",
         "editor.helpers.show_cat_popup"                 : "If this option is enabled, a pop-up will appear when adding a new item, allowing you to select a category for the item.",
         "editor.helpers.longlived_token"                : "A long-lived access token for persistent authentication with Home Assistant. It can be created in the user profile under 'Security → Long-Lived Access Tokens'. Warning: Treat this token confidentially as it grants full access to your system. Also note that if HTTP is used instead of HTTPS, the token is transmitted unencrypted and is therefore insecure.",
         "editor.helpers.external_url"                   : "The (external) URL of your Home Assistant installation (e.g. 'https://my-ha.duckdns.org:8123'). This is required if you use the export function to synchronize items later with Home Assistant. If you do not provide a URL here, the URL from which the dashboard was accessed during export will be used.",
@@ -789,7 +805,10 @@ class HaShoppingListImproved extends HTMLElement {
         this._showCategoryChips     = (config.show_category_chips === true) ? true : false;
         this._allowFilter           = (config.allow_filter === true) ? true : false;
         this._capitalizeFirst       = (config.capitalize_first_letter === true) ? true : false;
-        debugMode                   = (config.debug_mode === true) ? true : false;
+        this._sortItems             = (config.sort_items === false) ? false : true;
+        this._hideCatCountAllDone   = (config.hide_cat_count_all_done === true) ? true : false;
+        this._showDoneItemsInSearch = (config.show_done_hidden_items_in_search === false) ? false : true;
+        debugMode                   = (config.debug_mode === false) ? false : true;
         
         const allowedModes = [
             // 1 Cat
@@ -1108,6 +1127,7 @@ class HaShoppingListImproved extends HTMLElement {
                     { name: "show_qrscan_button", selector: { boolean: {} }, default: false },
                     { name: "show_admin_button", selector: { boolean: {} }, default: true },
                     { name: "show_message_button", selector: { boolean: {} }, default: false },
+                    { name: "show_clear_button", selector: { boolean: {} }, default: true },
                     { name: "sub_text", selector: { text: {} }, default: " "},
                     { name: "bubble_card", selector: { boolean: {} }, default: false }
                 ]
@@ -1119,6 +1139,7 @@ class HaShoppingListImproved extends HTMLElement {
                 label: 'item.options',
                 icon: 'mdi:format-list-checks',
                 schema: [
+                    { name: "sort_items", selector: { boolean: {} }, default: true },
                     {
                         name: "quantity",
                         selector: {
@@ -1147,6 +1168,7 @@ class HaShoppingListImproved extends HTMLElement {
                     { name: "show_plus_minus", selector: { boolean: {} }, default: true },
                     { name: "show_quantity_one", selector: { boolean: {} }, default: false },
                     { name: "allow_filter", selector: { boolean: {} }, default: false },
+                    { name: "show_done_hidden_items_in_search", selector: { boolean: {} }, default: true },
                     { name: "capitalize_first_letter", selector: { boolean: {} }, default: false },
                     {
                         name: "ean_file",
@@ -1266,6 +1288,7 @@ class HaShoppingListImproved extends HTMLElement {
                     },
                     { name: "show_cat_popup", selector: { boolean: {} }, default: true },
                     { name: "show_cat_count", selector: { boolean: {} }, default: true },
+                    { name: "hide_cat_count_all_done", selector: { boolean: {} }, default: false },
                     { name: "show_cat_next_due", selector: { boolean: {} }, default: true },
                     { name: "cat_double_sized_icon", selector: { boolean: {} }, default: true },
                     { name: "show_cat_exclamation_mark", selector: { boolean: {} }, default: true },
@@ -2927,23 +2950,26 @@ async _adminOptions() {
             }));
 
 			// Sort function: A --> Z, ignore quantity and category
-			this._items.sort((a, b) => {
-				const nameA = this._getNameOnly(a.name);
-				const nameB = this._getNameOnly(b.name);
+            if (this._sortItems) {
+                this._items.sort((a, b) => {
+                    const nameA = this._getNameOnly(a.name);
+                    const nameB = this._getNameOnly(b.name);
 
-				return nameA.toLowerCase().localeCompare(nameB.toLowerCase(), undefined, { sensitivity: 'base' });
-			});
+                    return nameA.toLowerCase().localeCompare(nameB.toLowerCase(), undefined, { sensitivity: 'base' });
+                });                
+            }
 
             if(debugMode) console.debug("[ha-shopping-list-improved][DEBUG] Loaded Items:", this._items.map(i => i.name));
             
-            // acknowledged-Logic
+            /*
             if (this._acknowledgedMode === "hide") {
                 this._items = this._items.filter(i => !i.complete);
             } else if (this._acknowledgedMode === "end") {
                 const done = this._items.filter(i => i.complete);
                 const notDone = this._items.filter(i => !i.complete);
                 this._items = [...notDone, ...done];
-            }     
+            }    
+            */ 
             
             // after we have the items, extract dynamic categories from items
             this._addDynamicCategories(this._items);
@@ -2983,21 +3009,26 @@ async _adminOptions() {
 
         // acknowledged-Filter
         let itemsToRender = [...this._items];
-        const ack = this._config?.acknowledged;
+        let ack = this._config?.acknowledged;
 
         // Filter list while typing
+        let showHidden = false;
         if(this._allowFilter && this._inputEl && this._inputEl.value && this._inputEl.value.trim().length > 0) {
+            // show also done items when filtering (if enabled) in this._showDoneItemsInSearch
+            showHidden = this._showDoneItemsInSearch;
             itemsToRender = itemsToRender.filter(i => i.name && i.name.trim().toLowerCase().includes(this._inputEl.value.trim().toLowerCase()));
         }
 
-        if (ack === 'hide') {
-            itemsToRender = itemsToRender.filter(i => !i.complete);
-        } else if (ack === 'end') {
-            itemsToRender.sort((a, b) => {
-                if (a.complete && !b.complete) return 1;
-                if (!a.complete && b.complete) return -1;
-                return 0;
-            });
+        if (!showHidden) {
+            if (ack === 'hide') {
+                itemsToRender = itemsToRender.filter(i => !i.complete);
+            } else if (ack === 'end') {
+                itemsToRender.sort((a, b) => {
+                    if (a.complete && !b.complete) return 1;
+                    if (!a.complete && b.complete) return -1;
+                    return 0;
+                });
+            }
         }
 
         // Articles without category
@@ -3127,6 +3158,10 @@ async _adminOptions() {
             if (this._showCatCount) {
                 const doneDiv = document.createElement('div');
                 doneDiv.textContent = `(${done}/${total})`;
+                // Hide cat count if all done
+                if (this._hideCatCountAllDone && done === total) {
+                    doneDiv.textContent = '';
+                }
                 doneDiv.style.marginLeft = '8px';
                 doneDiv.style.whiteSpace = 'nowrap';
                 firstRow.appendChild(doneDiv);
@@ -3327,6 +3362,10 @@ async _adminOptions() {
                 if (this._showCatCount) {
                     const doneDiv = document.createElement('div');
                     doneDiv.textContent = `(${done}/${total})`;
+                    // Hide cat count if all done
+                    if (this._hideCatCountAllDone && done === total) {
+                        doneDiv.textContent = '';
+                    }
                     doneDiv.style.marginLeft = '8px';
                     doneDiv.style.whiteSpace = 'nowrap';
                     firstRow.appendChild(doneDiv);
