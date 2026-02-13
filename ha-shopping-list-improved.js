@@ -1,5 +1,5 @@
 /* Improved Shopping List Card */
-const version = "2.3.0-BETA-2";
+const version = "2.3.0-BETA-3";
 /*
  * @description Improved Shopping List Card for Home Assistant.
  * @author Nisbo
@@ -120,6 +120,7 @@ const TRANSLATIONS = {
         "editor.labels.item.options"                    : "Artikel",
         "editor.labels.general.options"                 : "Allgemeine Einstellungen",
         "editor.labels.input_row_position"              : "Position der Eingabemaske",
+        "editor.labels.option_row_position"             : "Position der Buttonleiste",
         "editor.labels.allow_dynamic_categories"        : "Dynamische Kategorien erlauben",
         "editor.labels.show_admin_button"               : "Admin-Button anzeigen",
         "editor.labels.notify_on_change"                : "Bei Änderungen benachrichtigen",
@@ -265,6 +266,7 @@ const TRANSLATIONS = {
         "editor.helpers.todo_yellow_s"                  : "Warnschwelle für fällige Aufgaben ohne Zeitangabe, definiert in Minuten (Standard: 120 = 2 Stunden)",
         "editor.helpers.title"                          : "Der Titel für die Karte. Leerlassen, um ihn auszublenden",
         "editor.helpers.input_row_position"             : "Legt fest, ob die Eingabemaske (Anzahl, Artikel, Button) oberhalb oder unterhalb der Einträge angezeigt wird.",
+        "editor.helpers.option_row_position"            : "Legt fest, ob die Buttonleiste (Export, Nachricht, Admin-Optionen) oben oder unten angezeigt wird.",
         "editor.helpers.allow_dynamic_categories"       : "Dynamische Kategorien ermöglichen es, von außerhalb der Karte (z. B. über Automationen im Format: ‘@Kategorie@ Artikel’) Artikel Kategorien zuzuordnen, die nicht definiert sind. Außerdem können beim Hinzufügen über die Karte neue Kategorien erstellt werden. Diese Kategorien bleiben bestehen, bis der letzte Artikel in der Kategorie entfernt wurde.",
         "editor.helpers.show_message_button"            : "Zeigt im Modus 'Einkaufsliste' einen Nachrichten-Button an, über den die Liste z.B. per Email oder Telegram (über 'notify') gesendet werden kann. Dazu muss die Notify-Entität unter dem Punkt Benachrichtigungen konfiguriert werden.",
         "editor.helpers.show_clear_button"              : "Zeigt einen Button an, um alle als erledigt markierten Artikel aus der Liste zu entfernen.",
@@ -449,6 +451,7 @@ const TRANSLATIONS = {
         "editor.labels.item.options"                    : "Items",
         "editor.labels.general.options"                 : "General settings",
         "editor.labels.input_row_position"              : "Input row position",
+        "editor.labels.option_row_position"             : "Button row position",
         "editor.labels.allow_dynamic_categories"        : "Allow dynamic Categories",
         "editor.labels.show_admin_button"               : "Show admin options button",
         "editor.labels.notify_on_change"                : "Notify on change",
@@ -593,6 +596,7 @@ const TRANSLATIONS = {
         "editor.helpers.todo_yellow_s"                  : "Warning threshold for due dates without time, defined in minutes (Default: 120 = 2 hours)",
         "editor.helpers.title"                          : "The title for the card. Leave empty to hide it",
         "editor.helpers.input_row_position"             : "Determines whether the input mask (quantity, item, button) is displayed above or below the entries.",
+        "editor.helpers.option_row_position"            : "Determines whether the buttons (message, clear, export) are displayed top or bottom.",
         "editor.helpers.allow_dynamic_categories"       : "Dynamic categories make it possible to assign items to categories that are not predefined, even from outside the card (e.g. through automations in the format: ‘@Category@ Item’). Additionally, new categories can be created when adding items through the card. These categories remain available until the last item in the category has been removed.",
         "editor.helpers.show_message_button"            : "Displays (in Shopping List Mode) a message button that allows sending the list via email, Telegram (using 'notify'), or similar. The notify entity must be configured under the Notifications section.",
         "editor.helpers.show_clear_button"              : "Displays a button to clear all completed items from the list.",
@@ -759,6 +763,7 @@ class HaShoppingListImproved extends HTMLElement {
         this._showTitleInfoIcon     = (config.show_title_info_icon === false) ? false : true;
         this._quantityPosition      = (config.quantity === "beginning") ? "beginning" : "end";
         this._inputRowPosition      = (config.input_row_position === "bottom") ? "bottom" : "top";
+        this._optionRowPosition     = (config.option_row_position === "top") ? "top" : "bottom";
         this._acknowledgedMode      = ["hide", "end"].includes(config.acknowledged) ? config.acknowledged : "show";
         this._chipClick             = (config.chip_click === "dblclick") ? "dblclick" : "click";
         this._showQuantitySelection = (config.show_quantity_box === false) ? false : true;
@@ -1052,6 +1057,7 @@ class HaShoppingListImproved extends HTMLElement {
             entity: getDefaultShoppingListEntity(document.querySelector("home-assistant")?.hass),
             chips_position: "auto",
             input_row_position: "top",
+            option_row_position: "bottom",
             quantity: "end",
             acknowledged: "show",
             mode: "shopping",
@@ -1125,6 +1131,19 @@ class HaShoppingListImproved extends HTMLElement {
                             }
                         },
                         default: "top"
+                    },
+                    {
+                        name: "option_row_position",
+                        selector: {
+                            select: {
+                                mode: "dropdown",
+                                options: [
+                                    { value: "top", label: translate("editor.options.inputrow.top") },
+                                    { value: "bottom", label: translate("editor.options.inputrow.bottom") }
+                                ]
+                            }
+                        },
+                        default: "bottom"
                     },
                     { name: "show_quantity_box", selector: { boolean: {} }, default: true },
                     { name: "show_input_mask", selector: { boolean: {} }, default: true },
@@ -1966,7 +1985,7 @@ class HaShoppingListImproved extends HTMLElement {
                             vertical-align: middle;
                         "></ha-icon>
                     </div>
-                    <div class="small">
+                    <div id="subText" class="small">
                         ${this._subText }
                     </div>
 
@@ -1977,7 +1996,7 @@ class HaShoppingListImproved extends HTMLElement {
                         <div class="history" id="history"></div>
                     </div>
 
-                    <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+                    <div id="optionRow" style="display:flex; justify-content:flex-end; margin-top:8px;">
                         ${this._showMessageButton   ? `<button id="msgBtn" style="font-size:18px; background:none; border:none; cursor:pointer;">&#x2709;&#xFE0F;</button> ` : ``}
                         ${this._showAdminButton     ? `<button id="adminBtn" style="font-size:18px; background:none; border:none; cursor:pointer;">&#x2699;&#xFE0F;</button> ` : ``}
                         ${this._showExportButtonPdf ? `<button id="pdfBtn">${translate("ui.common.export_pdf")}</button> &#160;`  : ``}
@@ -2044,8 +2063,10 @@ class HaShoppingListImproved extends HTMLElement {
 
         // Input Row Positioning
         this._positionInputRow() ;
+        this._positionOptionRow();
         window.addEventListener('resize', () => {
             this._positionInputRow();
+            this._positionOptionRow();
         });
     }
 
@@ -2607,6 +2628,17 @@ async _adminOptions() {
                 }
             }
         }
+    }
+
+    // Option Row Positioning
+    _positionOptionRow() {
+        if (this._optionRowPosition === 'bottom') return;
+        const optionRow = this._shadow.getElementById("optionRow");
+        const subText = this._shadow.getElementById("subText");
+
+        optionRow.remove();
+
+        subText.insertAdjacentElement('beforebegin', optionRow);
     }
 
 	// EAN
@@ -4777,6 +4809,7 @@ async _adminOptions() {
 						service_data: {
 							item: existing.id,
 							rename: finalName,
+                            status: "needs_action",
 						},
 					};
 					if (debugMode) console.debug("[ha-shopping-list-improved][DEBUG] Updating existing item:", updateMsg);
