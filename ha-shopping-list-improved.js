@@ -1946,44 +1946,6 @@ class HaShoppingListImproved extends HTMLElement {
                 border-radius: 9px;
                 transition: background 0.3s;
             }
-
-.dish-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.4);
-    z-index: 999;
-}
-
-.dish-modal {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    pointer-events: none; /* Hintergrund nicht klickbar, nur Overlay aktiv */
-}
-
-.dish-container {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    max-width: 400px;
-    width: 90%;
-    pointer-events: all; /* Container klickbar */
-}
-
-
-.dish-buttons {
-    margin-top: 15px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-
-
         `;
 
         this._shadow.innerHTML = `
