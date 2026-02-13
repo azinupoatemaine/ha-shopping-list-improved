@@ -1,5 +1,5 @@
 /* Improved Shopping List Card */
-const version = "2.3.0-BETA-3";
+const version = "2.3.0-BETA-4";
 /*
  * @description Improved Shopping List Card for Home Assistant.
  * @author Nisbo
@@ -1946,6 +1946,44 @@ class HaShoppingListImproved extends HTMLElement {
                 border-radius: 9px;
                 transition: background 0.3s;
             }
+
+.dish-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.4);
+    z-index: 999;
+}
+
+.dish-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    pointer-events: none; /* Hintergrund nicht klickbar, nur Overlay aktiv */
+}
+
+.dish-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 90%;
+    pointer-events: all; /* Container klickbar */
+}
+
+
+.dish-buttons {
+    margin-top: 15px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+
+
         `;
 
         this._shadow.innerHTML = `
@@ -5546,7 +5584,144 @@ async _adminOptions() {
             this._historyEl.appendChild(chip);
         });
 		
-		// Add dishes
+        // Add dishes with selectable items
+        const dishes = this._dishes || [];
+
+        dishes.forEach(dish => {
+            const chip = document.createElement('div');
+            chip.className = 'chip';
+            chip.textContent = dish.name || "(no dish)";
+            chip.style.background = dish.bgcolor || this._chipColorDish; // fallback
+
+			// Click or Double-Click-Logic
+			const clickEvent = this._chipClick === 'click' ? 'click' : 'dblclick';
+			chip.addEventListener(clickEvent, async () => {
+				if (this._addingBusy) return;
+                if (!dish.items || !dish.items.length) return;
+
+                // Overlay
+                const overlay = document.createElement('div');
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.background = 'rgba(0,0,0,0.4)';
+                overlay.style.display = 'flex';
+                overlay.style.alignItems = 'center';
+                overlay.style.justifyContent = 'center';
+                overlay.style.zIndex = '9999';
+                overlay.style.pointerEvents = 'auto';
+
+                // Container
+                const popup = document.createElement('div');
+                popup.style.background = 'var(--card-background-color, white)';
+                popup.style.padding = '16px';
+                popup.style.borderRadius = '8px';
+                popup.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                popup.style.maxWidth = '400px';
+                popup.style.width = '90%';
+                popup.style.fontFamily = 'var(--ha-card-font-family, Roboto, sans-serif)';
+                popup.style.color = 'var(--primary-text-color, black)';
+                popup.style.pointerEvents = 'auto';
+
+                // Title
+                const title = document.createElement('h3');
+                title.textContent = dish.name || "(no dish)";
+                title.style.marginBottom = '12px';
+                title.style.textAlign = 'center';
+                popup.appendChild(title);
+
+                // Items-List
+                const form = document.createElement('div');
+                form.style.display = 'flex';
+                form.style.flexDirection = 'column';
+                form.style.gap = '6px';
+                form.style.marginBottom = '16px';
+
+                const checkboxes = [];
+
+                dish.items.forEach(item => {
+                    const label = document.createElement('label');
+                    label.style.display = 'flex';
+                    label.style.alignItems = 'center';
+                    label.style.gap = '6px';
+                    label.style.cursor = 'pointer';
+
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.checked = true;
+                    cb.value = this._getNameOnly(item);
+
+                    const span = document.createElement('span');
+
+                    if(this._getQuantity(item) > 1) {
+                        span.textContent = `${cb.value} (${this._getQuantity(item)})`;
+                    } else {
+                        span.textContent = cb.value;
+                    }
+
+                    label.appendChild(cb);
+                    label.appendChild(span);
+                    form.appendChild(label);
+
+                    checkboxes.push({ cb, item });
+                });
+
+                popup.appendChild(form);
+
+                // Buttons
+                const btnContainer = document.createElement('div');
+                btnContainer.style.display = 'flex';
+                btnContainer.style.justifyContent = 'center';
+                btnContainer.style.gap = '12px';
+
+                const btnAdd = document.createElement('button');
+                btnAdd.textContent = translate("ui.common.ok");
+                btnAdd.style.backgroundColor = 'var(--primary-color, #03A9F4)';
+                btnAdd.style.color = 'white';
+                btnAdd.style.border = 'none';
+                btnAdd.style.padding = '8px 16px';
+                btnAdd.style.borderRadius = '4px';
+                btnAdd.style.cursor = 'pointer';
+
+                btnAdd.addEventListener('click', async () => {
+                    if (this._addingBusy) return;
+                    for (const { cb, item } of checkboxes) {
+                        if (cb.checked) {
+                            this._inputEl.value = this._getNameOnly(item);
+                            this._qtyEl.value = this._getQuantity(item);
+                            await this._onAdd();
+                        }
+                    }
+                    document.body.removeChild(overlay);
+                });
+
+                const btnCancel = document.createElement('button');
+                btnCancel.textContent = translate("ui.common.cancel");
+                btnCancel.style.backgroundColor = 'var(--secondary-background-color, #eee)';
+                btnCancel.style.border = 'none';
+                btnCancel.style.padding = '8px 16px';
+                btnCancel.style.borderRadius = '4px';
+                btnCancel.style.cursor = 'pointer';
+                btnCancel.addEventListener('click', () => document.body.removeChild(overlay));
+
+                btnContainer.appendChild(btnAdd);
+                btnContainer.appendChild(btnCancel);
+                popup.appendChild(btnContainer);
+
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) document.body.removeChild(overlay);
+                });
+
+                overlay.appendChild(popup);
+                document.body.appendChild(overlay);
+            });
+
+            this._historyEl.appendChild(chip);
+        });
+
+        /*
 		const dishes = this._dishes || [];
 
 		dishes.forEach(dish => {
@@ -5573,6 +5748,7 @@ async _adminOptions() {
 
 			this._historyEl.appendChild(chip);
 		});
+        */
 
         // Add Chips from Category
         const hideConfiguredChips = false;        // to hide category chips if already in history or dishes --> not used at the moment
