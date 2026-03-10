@@ -1,5 +1,5 @@
 /* Improved Shopping List Card */
-const version = "2.3.0-BETA-4";
+const version = "2.3.0-BETA-5";
 /*
  * @description Improved Shopping List Card for Home Assistant.
  * @author Nisbo
@@ -236,6 +236,7 @@ const TRANSLATIONS = {
         "editor.labels.show_export_button"              : "HTML Export-Button anzeigen",
         "editor.labels.show_input_mask"                 : "Eingabe-Maske anzeigen",
 		"editor.labels.show_plus_minus"                 : "Plus / Minus Buttons anzeigen (Nur im Modus 'Einkaufsliste')",
+        "editor.labels.acknowledge_deletion"            : "Löschbestätigung anzeigen",
         "editor.labels.show_quantity_one"               : "Anzahl 1 anzeigen",
         "editor.labels.sub_text"                        : "Hinweistext unter der Eingabe",
         "editor.labels.chips"                           : "Standard-Chips (Komma oder Semikolon getrennt)",
@@ -318,6 +319,7 @@ const TRANSLATIONS = {
         "editor.helpers.show_export_button"             : "Zeigt den HTML Export-Button unten an. Mit der HTML-Export-Funktion kannst du die aktuelle Einkaufsliste als HTML-Datei herunterladen und offline verwenden.",
         "editor.helpers.show_input_mask"                : "Zeigt die komplette Eingabemaske an oder nicht.",
 		"editor.helpers.show_plus_minus"                : "Zeigt die Plus / Minus Buttons zum Erhöhen oder Verringern der Anzahl an oder nicht. Im Modus 'To-Do-Liste' sind diese Buttons nicht verfügbar.",
+        "editor.helpers.acknowledge_deletion"           : "Zeigt ein Bestätigung-Popup an, bevor ein Artikel gelöscht wird.",
         "editor.helpers.show_quantity_one"              : "Zeigt auch Anzahl 1 an (sonst nur Name).",
         "editor.helpers.sub_text"                       : "Text unter dem Eingabefeld zur Erklärung oder Tipps.",
         "editor.helpers.chips"                          : "Definiert Standard-Chips, z.B. 'Milch,Eier,Brot'.",
@@ -566,6 +568,7 @@ const TRANSLATIONS = {
         "editor.labels.show_export_button"              : "Show HTML Export button",
         "editor.labels.show_input_mask"                 : "Show input mask",
 		"editor.labels.show_plus_minus"                 : "Show Plus / Minus Buttons (Only in 'Shopping List' mode)",
+        "editor.labels.acknowledge_deletion"            : "Ask for confirmation when deleting items",
         "editor.labels.show_quantity_one"               : "Show quantity 1",
         "editor.labels.sub_text"                        : "Hint text below the input field",
         "editor.labels.chips"                           : "Default chips (comma or semicolon separated)",
@@ -649,7 +652,8 @@ const TRANSLATIONS = {
         "editor.helpers.show_export_button"             : "Shows the HTML Export button on the bottom. With the HTML-Export function, you can download the current todo list as an HTML file for offline use.",
 		"editor.helpers.show_input_mask"                : "Shows the full input mask (quantity + text + add button). Useful to restrict input to predefined chips.",
 		"editor.helpers.show_plus_minus"                : "Shows the Plus / Minus Buttons to increase / decrease the quantity. (Not available in 'To-Do List' mode).",
-		"editor.helpers.show_quantity_one"              : "Also display quantity '1'. If disabled, quantity 1 is omitted for new items.",
+		"editor.helpers.acknowledge_deletion"           : "Enables a confirmation dialog when deleting items to prevent accidental deletions.",
+        "editor.helpers.show_quantity_one"              : "Also display quantity '1'. If disabled, quantity 1 is omitted for new items.",
 		"editor.helpers.sub_text"                       : "Text shown below the input field for tips or explanations. HTML is allowed. Use a single space to hide the field.",
 		"editor.helpers.chips"                          : "Defines default chips, e.g. 'Milk,Eggs,Bread'.",
         "editor.helpers.chip_file"                      : "Example: /local/chips.txt if the file is located in the www folder. One chip per line is required.",
@@ -818,6 +822,7 @@ class HaShoppingListImproved extends HTMLElement {
         this._sortItems             = (config.sort_items === false) ? false : true;
         this._hideCatCountAllDone   = (config.hide_cat_count_all_done === true) ? true : false;
         this._showDoneItemsInSearch = (config.show_done_hidden_items_in_search === false) ? false : true;
+        this._acknowledgeDeletion   = (config.acknowledge_deletion === false) ? false : true;
         debugMode                   = (config.debug_mode === false) ? false : true;
         
         const allowedModes = [
@@ -1189,6 +1194,7 @@ class HaShoppingListImproved extends HTMLElement {
                         },
                         default: "show"
                     },
+                    { name: "acknowledge_deletion", selector: { boolean: {} }, default: true },
                     { name: "show_plus_minus", selector: { boolean: {} }, default: true },
                     { name: "show_quantity_one", selector: { boolean: {} }, default: false },
                     { name: "allow_filter", selector: { boolean: {} }, default: false },
@@ -5075,7 +5081,12 @@ async _adminOptions() {
                         // parse date-only into local midnight
                         const [y, mm, dd] = currentDue.split('-').map(n => parseInt(n, 10));
                         const base = new Date(y, mm - 1, dd, 0, 0, 0);
-                        const next = addIntervalToDate(base, effectiveInterval.value, effectiveInterval.unit);
+                        let next = addIntervalToDate(base, effectiveInterval.value, effectiveInterval.unit);
+
+                        while (next <= now) {
+                            next = addIntervalToDate(next, effectiveInterval.value, effectiveInterval.unit);
+                        }
+
                         // if (D or M) use due_date
                         if (effectiveInterval.unit === 'D' || effectiveInterval.unit === 'M') {
                             dueDate = formatDateOnly(next);
@@ -5087,7 +5098,12 @@ async _adminOptions() {
                         // currentDue has time (ISO)
                         // create Date from ISO (handles offsets)
                         const base = new Date(currentDue);
-                        const next = addIntervalToDate(base, effectiveInterval.value, effectiveInterval.unit);
+                        let next = addIntervalToDate(base, effectiveInterval.value, effectiveInterval.unit);
+
+                        while (next <= now) {
+                            next = addIntervalToDate(next, effectiveInterval.value, effectiveInterval.unit);
+                        }
+
                         // set due_datetime
                         dueDateTime = formatDateTime(next);
                     }
@@ -5240,9 +5256,12 @@ async _adminOptions() {
         const itemQtyOnly  = this._getQuantity(item.name);
 		const msgRemove = translate("editor.labels.confirm_remove").replace("{item}", itemNameOnly);
     
-		if (!(await this.confirmPopup(msgRemove))) {
-            if(this._mode ===  "todo") await this._confirmToDoPopup(item);
-            return;
+        // show confirmation except when acknowledgeDeletion=false AND not todo
+        if (this._mode === "todo" || this._acknowledgeDeletion) {
+            if (!(await this.confirmPopup(msgRemove))) {
+                if (this._mode === "todo") await this._confirmToDoPopup(item);
+                return;
+            }
         }
 
         try {
