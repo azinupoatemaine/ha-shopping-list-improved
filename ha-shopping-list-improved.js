@@ -1,5 +1,5 @@
 /* Improved Shopping List Card */
-const version = "2.3.0-BETA-5";
+const version = "2.3.0-BETA-6";
 /*
  * @description Improved Shopping List Card for Home Assistant.
  * @author Nisbo
@@ -6440,28 +6440,63 @@ async _adminOptions() {
         }
     }
 
+    _chipExistsInCategory(categories, name) {
+        if (this._showCategoryChips !== true) return false; // echeck only if category chips are enabled
+        if (!name || typeof name !== "string") return false;
+
+        const search = name.trim().toLowerCase();
+
+        return categories.some(category => {
+            if (!Array.isArray(category.items)) return false;
+
+            return category.items.some(item =>
+                typeof item === "string" &&
+                item.toLowerCase() === search
+            );
+        });
+    }
+
     _addToHistory(name){
         name = (name || '').trim();
         if(!name) return;
 
+        if(debugMode) console.debug("[ha-shopping-list-improved][DEBUG] _addToHistory called for:", name);
+
         const nameLower = name.toLowerCase();
+        let dontAdd = false;
 
         if (this._defaultChips?.some(chip => chip.toLowerCase() === nameLower) || !this._allowLocalChips) {
             if(debugMode) console.debug("[ha-shopping-list-improved][DEBUG] Name is already in DefaultChips (case-insensitive):", name);
-            return;
+            dontAdd = true;
+        }
+
+        const exists = this._chipExistsInCategory(this._categories, name);
+
+        if (exists) {
+            if(debugMode) console.debug("[ha-shopping-list-improved][DEBUG] Chip already exists in a category:", name);
+            dontAdd = true;
         }
 
         const idx = this._previous.findIndex(x => x.toLowerCase() === nameLower);
 
-        if(idx !== -1){
-            const original = this._previous[idx];
-            this._previous.splice(idx,1);
-            this._previous.unshift(original);
-        } else {
-            this._previous.unshift(name);
+        if (!dontAdd) {
+            if(idx !== -1){
+                if(debugMode) console.debug("[ha-shopping-list-improved][DEBUG] _addToHistory - option if:", name);
+                const original = this._previous[idx];
+                this._previous.splice(idx,1);
+                this._previous.unshift(original);
+            } else {
+                if(debugMode) console.debug("[ha-shopping-list-improved][DEBUG] _addToHistory - option else:", name);
+                this._previous.unshift(name);
+            }
+
+            this._previous = this._previous.slice(0,2000);
         }
 
-        this._previous = this._previous.slice(0,2000);
+        // We have to run this again
+		this._inputEl.value = '';
+		this._qtyEl.value = '';
+
         this._saveHistory();
         this._renderHistory();
     }
