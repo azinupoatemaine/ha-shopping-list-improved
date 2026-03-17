@@ -4603,6 +4603,10 @@ async _adminOptions() {
 
     // ── Search Suggestions (based on category items) ──
 
+    _removeDiacritics(str) {
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
     _getAllCategoryItems() {
         const categories = Array.isArray(this._categories) ? this._categories : [];
         const items = [];
@@ -4625,8 +4629,11 @@ async _adminOptions() {
         }
 
         const allItems = this._getAllCategoryItems();
-        const lower = trimmed.toLowerCase();
-        const matches = allItems.filter(item => item.name.toLowerCase().includes(lower));
+        const searchWords = this._removeDiacritics(trimmed.toLowerCase()).split(/\s+/).filter(w => w.length > 0);
+        const matches = allItems.filter(item => {
+            const normalized = this._removeDiacritics(item.name.toLowerCase());
+            return searchWords.every(word => normalized.includes(word));
+        });
 
         if (matches.length === 0) {
             this._hideSuggestions();
