@@ -1688,7 +1688,13 @@ class HaShoppingListImproved extends HTMLElement {
         style.textContent = `
             :host { font-family: var(--font-family, Roboto, Noto, sans-serif); display:block; }
             .card { background: var(--card-background-color, var(--ha-card-background, #1c1c1c)); color: var(--primary-text-color); padding: 12px; border-radius: 8px; box-shadow: var(--ha-card-box-shadow); }
-            .input-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+            .input-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; position:relative; }
+            .suggestions-container { position:absolute; top:100%; left:0; right:0; z-index:1000; max-height:200px; overflow-y:auto; background:var(--card-background-color, #fff); border:1px solid var(--divider-color, #e0e0e0); border-radius:0 0 8px 8px; box-shadow:0 4px 8px rgba(0,0,0,0.15); display:none; }
+            .suggestions-container.visible { display:block; }
+            .suggestion-item { padding:8px 12px; cursor:pointer; font-size:14px; border-bottom:1px solid var(--divider-color, #f0f0f0); color:var(--primary-text-color, #333); }
+            .suggestion-item:last-child { border-bottom:none; }
+            .suggestion-item:hover, .suggestion-item.active { background:var(--primary-color, #03a9f4); color:#fff; }
+            .suggestion-item .suggestion-category { font-size:11px; opacity:0.7; margin-left:8px; }
             input[type="text"]{ flex:1; padding:8px; border-radius:4px; border:1px solid var(--divider-color);} 
             select { padding:6px; border-radius:4px; }
             .quantityselect { padding:8px; border-radius:4px; border:1px solid var(--divider-color); width:40px; }
@@ -1929,6 +1935,7 @@ class HaShoppingListImproved extends HTMLElement {
                             `
                         }
                         <input id="itemInput" type="text" placeholder="${translate("editor.placeholders.item")}" autocomplete="off">
+                        <div id="suggestions" class="suggestions-container"></div>
                         <button id="addBtn" class="primary ${this._showSubmitButton ? '' : 'hidden'}">${translate("editor.labels.add_button")}</button>
                         <ha-icon id="qrScanBtn" ${this._showQrScanButton ? '' : ' class="hidden"'}" icon="mdi:qrcode-scan" style="
                             cursor: pointer;
@@ -1962,12 +1969,33 @@ class HaShoppingListImproved extends HTMLElement {
         this._shadow.appendChild(style);
 
         this._shadow.getElementById('addBtn').addEventListener('click', this._onAdd);
-        this._shadow.getElementById('itemInput').addEventListener('keydown', (e)=>{ if (e.key === 'Enter') this._onAdd(); });
-        this._shadow.getElementById('itemInput').addEventListener('input', (e) => { 
+        this._shadow.getElementById('itemInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const activeSuggestion = this._shadow.querySelector('.suggestion-item.active');
+                if (activeSuggestion) {
+                    e.preventDefault();
+                    activeSuggestion.click();
+                } else {
+                    this._hideSuggestions();
+                    this._onAdd();
+                }
+            } else if (e.key === 'Escape') {
+                this._hideSuggestions();
+            } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                this._navigateSuggestions(e.key === 'ArrowDown' ? 1 : -1);
+            }
+        });
+        this._shadow.getElementById('itemInput').addEventListener('input', (e) => {
             if (this._allowFilter) this._renderList(); // to apply the filter while typing
             if (this._capitalizeFirst && e.target.value.length > 0) {
                 e.target.value = e.target.value[0].toUpperCase() + e.target.value.slice(1);
             }
+            this._updateSuggestions(e.target.value);
+        });
+        this._shadow.getElementById('itemInput').addEventListener('blur', () => {
+            // Delay to allow click on suggestion to fire first
+            setTimeout(() => this._hideSuggestions(), 150);
         });
         if (this._showClearButton)     this._shadow.getElementById('clearBtn').addEventListener('click', this._clearCompleted);
         if (this._showExportButton)    this._shadow.getElementById('downloadBtn').addEventListener('click', () => {this._exportOfflineList();});
@@ -1982,6 +2010,7 @@ class HaShoppingListImproved extends HTMLElement {
         this._historyEl          = this._shadow.getElementById('history');
         this._inputEl            = this._shadow.getElementById('itemInput');
         this._qtyEl              = this._shadow.getElementById('quantitySelect');
+        this._suggestionsEl      = this._shadow.getElementById('suggestions');
         this._titleAlert         = this._shadow.getElementById('titlealert');
         this._titleAlertDesc     = this._shadow.getElementById('titlealertdesc');
         this._titleAlertDescIcon = this._shadow.getElementById('titleicondesc');
@@ -4572,6 +4601,79 @@ async _adminOptions() {
         }
     }
 
+    // ── Search Suggestions (based on category items) ──
+
+    _getAllCategoryItems() {
+        const categories = Array.isArray(this._categories) ? this._categories : [];
+        const items = [];
+        for (const cat of categories) {
+            if (Array.isArray(cat.items)) {
+                for (const item of cat.items) {
+                    items.push({ name: item, category: cat.name });
+                }
+            }
+        }
+        return items;
+    }
+
+    _updateSuggestions(query) {
+        if (!this._suggestionsEl) return;
+        const trimmed = query.trim();
+        if (trimmed.length < 2) {
+            this._hideSuggestions();
+            return;
+        }
+
+        const allItems = this._getAllCategoryItems();
+        const lower = trimmed.toLowerCase();
+        const matches = allItems.filter(item => item.name.toLowerCase().includes(lower));
+
+        if (matches.length === 0) {
+            this._hideSuggestions();
+            return;
+        }
+
+        // Limit to 15 suggestions to keep it manageable
+        const limited = matches.slice(0, 15);
+        this._suggestionsEl.innerHTML = '';
+        for (const match of limited) {
+            const div = document.createElement('div');
+            div.classList.add('suggestion-item');
+            div.innerHTML = `${match.name}<span class="suggestion-category">${match.category}</span>`;
+            div.addEventListener('mousedown', (e) => {
+                e.preventDefault(); // prevent blur from firing before click
+                this._inputEl.value = match.name;
+                this._hideSuggestions();
+                this._onAdd();
+            });
+            this._suggestionsEl.appendChild(div);
+        }
+        this._suggestionsEl.classList.add('visible');
+    }
+
+    _hideSuggestions() {
+        if (this._suggestionsEl) {
+            this._suggestionsEl.classList.remove('visible');
+            this._suggestionsEl.innerHTML = '';
+        }
+    }
+
+    _navigateSuggestions(direction) {
+        if (!this._suggestionsEl || !this._suggestionsEl.classList.contains('visible')) return;
+        const items = this._suggestionsEl.querySelectorAll('.suggestion-item');
+        if (items.length === 0) return;
+
+        let activeIndex = -1;
+        items.forEach((item, i) => { if (item.classList.contains('active')) activeIndex = i; });
+
+        if (activeIndex >= 0) items[activeIndex].classList.remove('active');
+        let newIndex = activeIndex + direction;
+        if (newIndex < 0) newIndex = items.length - 1;
+        if (newIndex >= items.length) newIndex = 0;
+        items[newIndex].classList.add('active');
+        items[newIndex].scrollIntoView({ block: 'nearest' });
+    }
+
     // add new item
     async _onAdd() {
         if (this._addingBusy) {
@@ -4780,6 +4882,7 @@ async _adminOptions() {
 			this._addToHistory(inputName);
 			this._inputEl.value = '';
 			this._qtyEl.value = '';
+			this._hideSuggestions();
 			await this._refresh();
             await this._notifyOnChange(`${msgTask}: ${msgNameOnly} (${msgQty})`);
         } finally {
